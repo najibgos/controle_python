@@ -4,6 +4,7 @@ import io
 import os
 from datetime import datetime
 import unicodedata
+import time
 
 # Tentative d'importation de fpdf pour le PDF
 try:
@@ -112,8 +113,42 @@ st.markdown("""
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     }
+    .timer-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 20px;
+        padding: 0.8rem 1.2rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border: 1px solid #0f3460;
+    }
+    .timer-text {
+        font-size: 2rem;
+        font-weight: 800;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 2px;
+    }
+    .timer-warning {
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    .timer-label {
+        font-size: 0.7rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 0.2rem;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CONSTANTES
+# ══════════════════════════════════════════════════════════════════════════════
+TIME_PER_EXERCISE = 300  # 5 minutes en secondes
 
 # ══════════════════════════════════════════════════════════════════════════════
 # INITIALISATION SESSION
@@ -128,6 +163,9 @@ def init_session():
         'answers': {},
         'validated': {},
         'scores': {},
+        'timer_start': None,  # Timestamp de début de l'exercice courant
+        'time_spent': {},     # Temps passé par exercice
+        'auto_advance': False # Pour gérer l'avancement automatique
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -180,7 +218,6 @@ EXERCISES = [
             'print(f"L’aire du rectangle est : {aire}")'
         ],
         'points': 4,
-        # On peut saisir longueur et largeur dans n'importe quel ordre
         'swappable_groups': [[0, 1]]
     },
     {
@@ -235,6 +272,88 @@ EXERCISES = [
 
 TOTAL_POINTS = sum(ex['points'] for ex in EXERCISES)
 TOTAL_EXERCISES = len(EXERCISES)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FONCTIONS DE GESTION DU TEMPS
+# ══════════════════════════════════════════════════════════════════════════════
+def start_timer_for_current_exercise():
+    """Démarre le minuteur pour l'exercice courant"""
+    current_ex = st.session_state.page - 1
+    if current_ex not in st.session_state.time_spent:
+        st.session_state.timer_start = time.time()
+        st.session_state.time_spent[current_ex] = 0
+
+def get_remaining_time():
+    """Retourne le temps restant en secondes pour l'exercice courant"""
+    if st.session_state.timer_start is None:
+        return TIME_PER_EXERCISE
+    
+    elapsed = time.time() - st.session_state.timer_start
+    remaining = max(0, TIME_PER_EXERCISE - elapsed)
+    return remaining
+
+def format_time(seconds):
+    """Formate le temps en MM:SS"""
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{minutes:02d}:{secs:02d}"
+
+def auto_validate_and_next():
+    """Fonction appelée quand le temps est écoulé"""
+    ex_idx = st.session_state.page - 1
+    
+    # Si l'exercice n'est pas encore validé
+    if ex_idx not in st.session_state.validated:
+        # Pour un QCM sans réponse, on compte 0 point
+        if EXERCISES[ex_idx]['type'] == 'qcm':
+            if ex_idx not in st.session_state.answers:
+                st.session_state.answers[ex_idx] = -1
+                st.session_state.scores[ex_idx] = 0
+                st.session_state.validated[ex_idx] = True
+        
+        # Pour un exercice d'ordre sans réponse complète
+        elif EXERCISES[ex_idx]['type'] == 'ordering':
+            key = f'ord_{ex_idx}'
+            chosen = st.session_state.get(key + '_chosen', [])
+            total_instr = len(EXERCISES[ex_idx]['instructions'])
+            
+            if len(chosen) == total_instr:
+                st.session_state.answers[ex_idx] = list(chosen)
+                st.session_state.validated[ex_idx] = True
+                # Note partielle déjà calculée dans render_ordering
+            else:
+                # Réponse incomplète : 0 point
+                st.session_state.answers[ex_idx] = chosen
+                st.session_state.scores[ex_idx] = 0
+                st.session_state.validated[ex_idx] = True
+    
+    st.session_state.auto_advance = True
+
+def render_timer():
+    """Affiche le minuteur avec style"""
+    remaining = get_remaining_time()
+    
+    # Déterminer la classe CSS en fonction du temps restant
+    warning_class = "timer-warning" if remaining < 60 else ""
+    color = "#f44336" if remaining < 60 else ("#ff9800" if remaining < 120 else "#4caf50")
+    
+    timer_html = f"""
+    <div class="timer-card">
+        <div class="timer-label">⏱️ Temps restant</div>
+        <div class="timer-text" style="color: {color};">
+            {format_time(remaining)}
+        </div>
+    </div>
+    """
+    
+    # Afficher dans une colonne à droite
+    st.markdown(timer_html, unsafe_allow_html=True)
+    
+    # Vérifier si le temps est écoulé
+    if remaining <= 0 and not st.session_state.auto_advance:
+        if st.session_state.page - 1 not in st.session_state.validated:
+            auto_validate_and_next()
+            st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FONCTIONS UTILITAIRES & PDF
@@ -305,6 +424,16 @@ def generate_pdf_report():
     pdf.cell(0, 10, f'Note Finale : {note_20} / 20', ln=True)
     pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
+    
+    # Ajout des temps par exercice
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(0, 8, 'Temps par exercice :', ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    for i, ex in enumerate(EXERCISES):
+        time_spent = st.session_state.time_spent.get(i, 0)
+        time_str = format_time(time_spent)
+        pdf.cell(0, 5, f'Exercice {i+1}: {time_str}', ln=True)
+    pdf.ln(5)
 
     for i, ex in enumerate(EXERCISES):
         if pdf.get_y() > 250:
@@ -319,6 +448,7 @@ def generate_pdf_report():
 
         pdf.set_font('Helvetica', '', 9)
         pdf.cell(0, 5, f'Points obtenus : {score} / {ex["points"]}', ln=True)
+        pdf.cell(0, 5, f'Temps passé : {format_time(st.session_state.time_spent.get(i, 0))}', ln=True)
         pdf.ln(2)
 
         if ex['type'] == 'qcm':
@@ -430,6 +560,9 @@ def render_qcm(ex_idx):
             st.session_state.answers[ex_idx] = choice
             st.session_state.validated[ex_idx] = True
             st.session_state.scores[ex_idx] = ex['points'] if choice == ex['correct'] else 0
+            # Enregistrer le temps passé
+            if ex_idx in st.session_state.time_spent:
+                st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
 
         st.markdown("<div style='height:15px'></div>", unsafe_allow_html=True)
         st.button("✅  Valider ma réponse", type='primary', key=f'val_qcm_{ex_idx}', use_container_width=True,
@@ -532,6 +665,9 @@ def render_ordering(ex_idx):
     def validate_order():
         st.session_state.answers[ex_idx] = list(st.session_state[key + '_chosen'])
         st.session_state.validated[ex_idx] = True
+        # Enregistrer le temps passé
+        if ex_idx in st.session_state.time_spent:
+            st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
 
     col_avail, col_chosen = st.columns(2)
     with col_avail:
@@ -585,16 +721,19 @@ def render_welcome():
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("""<div class="info-box"><h4 style="margin-top:0;">📋 Informations</h4>
-        <ul style="line-height:2;"><li><b>Exercices :</b> 7</li><li><b>Score brut :</b> 28 points, converti en note /20</li>
-        <li><b>2 QCM</b> (8 pts) | <b>5 mises en ordre</b> (20 pts)</li></ul></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="info-box"><h4 style="margin-top:0;">⏱️ Règles</h4>
+        <ul style="line-height:2;"><li><b>Exercices :</b> {TOTAL_EXERCISES}</li><li><b>Score brut :</b> {TOTAL_POINTS} points, converti en note /20</li>
+        <li><b>2 QCM</b> (8 pts) | <b>5 mises en ordre</b> (20 pts)</li>
+        <li><b>⏰ Temps par exercice : 5 minutes</b></li>
+        <li>⚠️ Passage automatique à l'exercice suivant si le temps est écoulé</li></ul></div>""", unsafe_allow_html=True)
     with c2:
         st.markdown("""<div class="info-box"><h4 style="margin-top:0;">📜 Thèmes</h4>
         <ul style="line-height:2;"><li>🔹 Types de variables</li><li>🔹 print() et input()</li>
         <li>🔹 Opérateurs, conditions, boucle for et boucle while</li></ul></div>""", unsafe_allow_html=True)
 
     st.markdown("""<div style="background:linear-gradient(135deg,#fff8e1,#ffecb3);border-radius:12px;padding:1rem 1.5rem;border:1px solid #ffe082;margin-top:1rem;">
-    <b>⚠️ Règles :</b> Validation individuelle définitive. Points partiels pour les exercices de mise en ordre.</div>""",
+    <b>⚠️ Règles :</b> Validation individuelle définitive. Points partiels pour les exercices de mise en ordre.
+    <br><b>⏱️ Chronométrage :</b> 5 minutes par exercice. Un minuteur s'affichera en haut à droite.</div>""",
                 unsafe_allow_html=True)
 
     if not FPDF_AVAILABLE:
@@ -614,6 +753,7 @@ def render_welcome():
                 st.session_state.classe = classe
                 st.session_state.started = True
                 st.session_state.page = 1
+                st.session_state.timer_start = time.time()
                 st.rerun()
             else:
                 st.error("⚠️ Veuillez remplir le nom.")
@@ -653,9 +793,12 @@ def render_results():
         icon = "✅" if score == ex['points'] else ("⚠️" if score > 0 else "❌")
         pct = (score / ex['points']) * 100 if ex['points'] > 0 else 0
         bar_color = '#2e7d32' if pct == 100 else ('#f57f17' if pct > 0 else '#c62828')
+        time_spent = st.session_state.time_spent.get(i, 0)
+        time_str = format_time(time_spent)
         st.markdown(f"""<div class="result-row">
             <span style="margin-right:10px;font-size:1.1rem;">{icon}</span>
             <span style="flex:1;font-weight:500;"><span style="color:#999;font-size:0.8rem;margin-right:6px;">[{ex_type}]</span>Ex {i + 1} : {ex['title']}</span>
+            <span style="font-size:0.8rem;color:#666;margin:0 10px;">⏱️ {time_str}</span>
             <div style="width:100px;margin:0 15px;"><div style="height:6px;border-radius:3px;background:#eee;overflow:hidden;"><div style="height:100%;width:{pct}%;background:{bar_color};border-radius:3px;"></div></div></div>
             <span style="font-weight:700;color:{bar_color};min-width:60px;text-align:right;">{score}/{ex['points']}</span></div>""",
                     unsafe_allow_html=True)
@@ -702,20 +845,24 @@ elif st.session_state.finished:
     render_results()
 else:
     ex_idx = st.session_state.page - 1
-    ex = EXERCISES[ex_idx]
-
-    header_cols = st.columns([3, 1])
+    
+    # Démarrer le minuteur si nécessaire
+    if st.session_state.timer_start is None:
+        st.session_state.timer_start = time.time()
+    
+    # Header avec nom, classe et minuteur
+    header_cols = st.columns([2, 1, 1.5])
     with header_cols[0]:
         st.markdown(f"👤 **{st.session_state.nom}** ({st.session_state.classe})")
     with header_cols[1]:
-        st.markdown(
-            f"<div style='text-align:right;font-size:0.9rem;color:#1976d2;font-weight:600;'>Exercice {ex_idx + 1} / {TOTAL_EXERCISES}</div>",
-            unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:right;font-size:0.9rem;color:#1976d2;font-weight:600;'>Exercice {ex_idx + 1} / {TOTAL_EXERCISES}</div>", unsafe_allow_html=True)
+    with header_cols[2]:
+        render_timer()
 
     show_progress_bar()
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if ex['type'] == 'qcm':
+    if EXERCISES[ex_idx]['type'] == 'qcm':
         render_qcm(ex_idx)
     else:
         render_ordering(ex_idx)
@@ -730,6 +877,7 @@ else:
         if show_prev:
             if st.button("◀  Précédent", use_container_width=True):
                 st.session_state.page -= 1
+                st.session_state.timer_start = time.time()
                 st.rerun()
         else:
             st.markdown("&nbsp;")
@@ -741,11 +889,26 @@ else:
             btn_label, btn_action = "Suivant  ▶", 'next'
 
         if st.button(btn_label, type='primary', use_container_width=True, disabled=not can_proceed):
+            # Enregistrer le temps passé pour l'exercice courant
+            if ex_idx not in st.session_state.time_spent:
+                st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
+            
             if btn_action == 'finish':
                 st.session_state.finished = True
             else:
                 st.session_state.page += 1
+                st.session_state.timer_start = time.time()
             st.rerun()
 
     if not can_proceed:
         st.info("⚠️ **Veuillez valider votre réponse avant de passer à la suite.**")
+    
+    # Vérifier l'auto-avancement
+    if st.session_state.get('auto_advance', False):
+        st.session_state.auto_advance = False
+        if is_last:
+            st.session_state.finished = True
+        else:
+            st.session_state.page += 1
+            st.session_state.timer_start = time.time()
+        st.rerun()
