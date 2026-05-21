@@ -751,4 +751,4 @@ else:
             st.rerun()
 
     if not can_proceed:
-        st.info("⚠️ **Veuillez valider votre réponse avant de passer à la suite.**")s
+        st.info("⚠️ **Veuillez valider votre réponse avant de passer à la suite.**")
