@@ -1,10 +1,11 @@
+# app3.py - Variante "Algorithmes & Fonctions"
+
 import streamlit as st
 import random
 import io
 import os
 from datetime import datetime
 import unicodedata
-import time
 
 # Tentative d'importation de fpdf pour le PDF
 try:
@@ -17,13 +18,13 @@ except ImportError:
 # CONFIGURATION DE LA PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Contrôle de Python — Niveau Débutant",
+    page_title="Contrôle de Python — Algorithmes",
     page_icon="🐍",
     layout="wide"
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
-# STYLES CSS
+# STYLES CSS (similaire à l'original)
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
@@ -31,33 +32,27 @@ st.markdown("""
     html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
     .main-title {
         text-align: center; font-size: 2.8rem; font-weight: 800;
-        background: linear-gradient(135deg, #0d47a1 0%, #42a5f5 100%);
+        background: linear-gradient(135deg, #1b5e20 0%, #66bb6a 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         margin-bottom: 0.3rem; letter-spacing: -1px;
     }
     .subtitle {
-        text-align: center; font-size: 1.15rem; color: #64b5f6;
+        text-align: center; font-size: 1.15rem; color: #66bb6a;
         margin-bottom: 2.5rem; font-weight: 400;
     }
     .exercise-card {
-        background: linear-gradient(145deg, #f3f8ff 0%, #e3f2fd 100%);
+        background: linear-gradient(145deg, #f1f8e9 0%, #dcedc8 100%);
         border-radius: 16px; padding: 2rem 2.2rem;
-        border: 1px solid #bbdefb; box-shadow: 0 2px 12px rgba(13,71,161,0.06);
+        border: 1px solid #a5d6a7; box-shadow: 0 2px 12px rgba(27,94,32,0.06);
     }
     .section-label {
         display: inline-block; padding: 4px 14px; border-radius: 20px;
         font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
         letter-spacing: 1px; margin-bottom: 0.8rem;
     }
-    .label-qcm { background: #e3f2fd; color: #0d47a1; }
-    .label-ordre { background: #fff3e0; color: #e65100; }
-    .chosen-item {
-        background: linear-gradient(135deg, #e1f5fe, #b3e5fc);
-        border-left: 4px solid #0288d1; padding: 10px 14px;
-        border-radius: 0 10px 10px 0; margin: 5px 0;
-        font-family: 'Courier New', monospace; font-size: 0.95rem;
-        color: #01579b; font-weight: 500;
-    }
+    .label-qcm { background: #e8f5e9; color: #1b5e20; }
+    .label-code { background: #e3f2fd; color: #1565c0; }
+    .label-assoc { background: #fff3e0; color: #e65100; }
     .correct-item {
         background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
         border-left: 4px solid #2e7d32; padding: 10px 14px;
@@ -78,77 +73,21 @@ st.markdown("""
         font-size: 2.8rem; font-weight: 800; margin: 0 auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
-    .progress-container { margin-bottom: 1.2rem; }
-    .progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .progress-bar-bg { height: 10px; border-radius: 5px; background: #e0e0e0; overflow: hidden; }
     .progress-bar-fill {
         height: 100%; border-radius: 5px;
-        background: linear-gradient(90deg, #90caf9, #1976d2); transition: width 0.5s ease;
+        background: linear-gradient(90deg, #a5d6a7, #2e7d32); transition: width 0.5s ease;
     }
     .info-box {
         background: #f5f5f5; border-radius: 10px; padding: 1.2rem 1.5rem;
         border: 1px solid #e0e0e0;
     }
-    .result-row {
-        display: flex; align-items: center; padding: 10px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .result-row:last-child { border-bottom: none; }
-    .num-badge {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 28px; height: 28px; border-radius: 50%; background: #1976d2;
-        color: white; font-weight: 700; font-size: 0.85rem;
-        margin-right: 8px; flex-shrink: 0;
-    }
-    .empty-slot {
-        color: #bdbdbd; font-style: italic; padding: 10px 14px;
-        border: 2px dashed #e0e0e0; border-radius: 10px;
-        margin: 5px 0; text-align: center;
-    }
     div[data-testid="stButton"] > button {
         border-radius: 10px !important; font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
-    div[data-testid="stButton"] > button:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-    .timer-card {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: 20px;
-        padding: 0.8rem 1.2rem;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        border: 1px solid #0f3460;
-    }
-    .timer-text {
-        font-size: 2rem;
-        font-weight: 800;
-        font-family: 'Courier New', monospace;
-        letter-spacing: 2px;
-    }
-    .timer-warning {
-        animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    .timer-label {
-        font-size: 0.7rem;
-        color: #888;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 0.2rem;
-    }
 </style>
 """, unsafe_allow_html=True)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# CONSTANTES
-# ══════════════════════════════════════════════════════════════════════════════
-TIME_PER_EXERCISE = 300  # 5 minutes en secondes
 
 # ══════════════════════════════════════════════════════════════════════════════
 # INITIALISATION SESSION
@@ -163,9 +102,8 @@ def init_session():
         'answers': {},
         'validated': {},
         'scores': {},
-        'timer_start': None,  # Timestamp de début de l'exercice courant
-        'time_spent': {},     # Temps passé par exercice
-        'auto_advance': False # Pour gérer l'avancement automatique
+        'qcm_answers': {},
+        'association_answers': {}
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -176,187 +114,100 @@ init_session()
 CLASSES = ["TCSL_1", "TCSF_1", "TCSF_2", "TCSF_3", "TCSF_4", "TCSF_5", "TCSF_6", "TCSF_7"]
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CONTRÔLE : 5 EXERCICES DE PYTHON DE BASE
+# NOUVEAU CONTRÔLE : 6 EXERCICES (Algorithmes, Fonctions, Structures)
 # ══════════════════════════════════════════════════════════════════════════════
 EXERCISES = [
     {
         'type': 'qcm',
-        'title': 'Types de variables en Python',
-        'question': 'Quel est le type de la variable suivante ?  age = 16',
+        'title': 'Fonctions et portée des variables',
+        'question': 'Que va afficher ce code ?\n\n```python\ndef ma_fonction(x):\n    x = x + 5\n    return x\n\ny = 3\nresultat = ma_fonction(y)\nprint(resultat)\n```',
         'options': [
-            'str',
-            'float',
-            'int',
-            'bool'
+            '3',
+            '8',
+            '5',
+            'Une erreur'
         ],
-        'correct': 2,
-        'points': 4,
-        'explanation': 'La valeur <b>16</b> est un nombre entier. Son type est donc <b>int</b>.'
+        'correct': 1,
+        'points': 5,
+        'explanation': 'La fonction ajoute 5 à la valeur passée en paramètre. y=3 est passé, donc x devient 8, retourné et affiché.'
     },
     {
         'type': 'qcm',
-        'title': 'La fonction input()',
-        'question': 'Quelle affirmation est correcte à propos de input() ?',
+        'title': 'Listes en Python',
+        'question': 'Quelle est la sortie de ce code ?\n\n```python\nma_liste = [1, 2, 3, 4, 5]\nprint(ma_liste[1:4])\n```',
         'options': [
-            'input() affiche seulement un message à l’écran',
-            'input() lit une saisie clavier et retourne toujours une chaîne str',
-            'input() retourne toujours un entier int',
-            'input() sert uniquement à faire des calculs'
+            '[1, 2, 3]',
+            '[2, 3, 4]',
+            '[2, 3, 4, 5]',
+            '[1, 2, 3, 4]'
         ],
         'correct': 1,
-        'points': 4,
-        'explanation': '<b>input()</b> lit une saisie au clavier. Pour obtenir un nombre, on utilise une conversion comme <b>int(input(...))</b> ou <b>float(input(...))</b>.'
+        'points': 5,
+        'explanation': 'Le slicing [1:4] prend les éléments des indices 1, 2, 3 (exclut l\'indice 4).'
     },
     {
-        'type': 'ordering',
-        'title': 'Calculer l’aire d’un rectangle',
-        'description': 'Placez les instructions Python dans l’ordre pour lire la longueur et la largeur, calculer l’aire, puis l’afficher.',
-        'instructions': [
-            'longueur = float(input("Entrez la longueur : "))',
-            'largeur = float(input("Entrez la largeur : "))',
-            'aire = longueur * largeur',
-            'print(f"L’aire du rectangle est : {aire}")'
+        'type': 'qcm',
+        'title': 'Boucles et accumulations',
+        'question': 'Que calcule cette fonction ?\n\n```python\ndef mystere(n):\n    s = 0\n    for i in range(1, n+1):\n        s = s + i\n    return s\n```',
+        'options': [
+            'Le produit de 1 à n',
+            'La somme de 1 à n',
+            'Le factoriel de n',
+            'Le double de n'
         ],
-        'points': 4,
-        'swappable_groups': [[0, 1]]
+        'correct': 1,
+        'points': 5,
+        'explanation': 'Cette fonction calcule la somme des entiers de 1 à n.'
     },
     {
-        'type': 'ordering',
-        'title': 'Tester si une note est suffisante',
-        'description': 'Placez les instructions Python pour lire une note puis afficher « Admis » si la note est supérieure ou égale à 10, sinon « Non admis ».',
+        'type': 'code_order',
+        'title': 'Calcul du factoriel',
+        'description': 'Ordonnez les instructions pour calculer le factoriel d\'un nombre n (n!).',
         'instructions': [
-            'note = float(input("Entrez la note : "))',
-            'if note >= 10:',
-            '    print("Admis")',
+            'def factoriel(n):',
+            '    resultat = 1',
+            '    for i in range(1, n + 1):',
+            '        resultat = resultat * i',
+            '    return resultat',
+            'n = int(input("Entrez n : "))',
+            'print(f"{n}! = {factoriel(n)}")'
+        ],
+        'points': 5,
+        'swappable_groups': [[0, 5]]
+    },
+    {
+        'type': 'code_order',
+        'title': 'Nombre pair ou impair',
+        'description': 'Ordonnez les instructions pour tester si un nombre est pair ou impair.',
+        'instructions': [
+            'nombre = int(input("Entrez un nombre : "))',
+            'if nombre % 2 == 0:',
+            '    print(f"{nombre} est pair")',
             'else:',
-            '    print("Non admis")'
+            '    print(f"{nombre} est impair")'
         ],
-        'points': 4
+        'points': 5
     },
     {
-        'type': 'ordering',
-        'title': 'Afficher les nombres de 1 à 5',
-        'description': 'Placez les instructions Python dans l’ordre pour afficher les nombres de 1 à 5 avec une boucle for.',
-        'instructions': [
-            'for i in range(1, 6):',
-            '    print(i)'
+        'type': 'association',
+        'title': 'Associer les concepts',
+        'description': 'Associez chaque expression à sa valeur ou résultat correct.',
+        'pairs': [
+            ('len([1, 2, 3, 4])', '4'),
+            ('max([10, 25, 5, 30])', '30'),
+            ('min([7, 3, 9, 2])', '2'),
+            ('sum([1, 2, 3, 4])', '10'),
+            ('"Python"[0:3]', '"Pyt"')
         ],
-        'points': 4
-    },
-    {
-        'type': 'ordering',
-        'title': 'Calculer la somme de 1 à n avec for',
-        'description': 'Placez les instructions Python pour lire un entier n, calculer la somme 1 + 2 + ... + n avec une boucle for, puis afficher le résultat.',
-        'instructions': [
-            'n = int(input("Entrez un entier n : "))',
-            'somme = 0',
-            'for i in range(1, n + 1):',
-            '    somme += i',
-            'print(f"La somme est : {somme}")'
-        ],
-        'points': 4
-    },
-    {
-        'type': 'ordering',
-        'title': 'Compter de 1 à 5 avec while',
-        'description': 'Placez les instructions Python dans l’ordre pour afficher les nombres de 1 à 5 avec une boucle while.',
-        'instructions': [
-            'i = 1',
-            'while i <= 5:',
-            '    print(i)',
-            '    i += 1'
-        ],
-        'points': 4
-    },
+        'points': 5
+    }
 ]
 
 TOTAL_POINTS = sum(ex['points'] for ex in EXERCISES)
 TOTAL_EXERCISES = len(EXERCISES)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FONCTIONS DE GESTION DU TEMPS
-# ══════════════════════════════════════════════════════════════════════════════
-def start_timer_for_current_exercise():
-    """Démarre le minuteur pour l'exercice courant"""
-    current_ex = st.session_state.page - 1
-    if current_ex not in st.session_state.time_spent:
-        st.session_state.timer_start = time.time()
-        st.session_state.time_spent[current_ex] = 0
-
-def get_remaining_time():
-    """Retourne le temps restant en secondes pour l'exercice courant"""
-    if st.session_state.timer_start is None:
-        return TIME_PER_EXERCISE
-    
-    elapsed = time.time() - st.session_state.timer_start
-    remaining = max(0, TIME_PER_EXERCISE - elapsed)
-    return remaining
-
-def format_time(seconds):
-    """Formate le temps en MM:SS"""
-    minutes = int(seconds // 60)
-    secs = int(seconds % 60)
-    return f"{minutes:02d}:{secs:02d}"
-
-def auto_validate_and_next():
-    """Fonction appelée quand le temps est écoulé"""
-    ex_idx = st.session_state.page - 1
-    
-    # Si l'exercice n'est pas encore validé
-    if ex_idx not in st.session_state.validated:
-        # Pour un QCM sans réponse, on compte 0 point
-        if EXERCISES[ex_idx]['type'] == 'qcm':
-            if ex_idx not in st.session_state.answers:
-                st.session_state.answers[ex_idx] = -1
-                st.session_state.scores[ex_idx] = 0
-                st.session_state.validated[ex_idx] = True
-        
-        # Pour un exercice d'ordre sans réponse complète
-        elif EXERCISES[ex_idx]['type'] == 'ordering':
-            key = f'ord_{ex_idx}'
-            chosen = st.session_state.get(key + '_chosen', [])
-            total_instr = len(EXERCISES[ex_idx]['instructions'])
-            
-            if len(chosen) == total_instr:
-                st.session_state.answers[ex_idx] = list(chosen)
-                st.session_state.validated[ex_idx] = True
-                # Note partielle déjà calculée dans render_ordering
-            else:
-                # Réponse incomplète : 0 point
-                st.session_state.answers[ex_idx] = chosen
-                st.session_state.scores[ex_idx] = 0
-                st.session_state.validated[ex_idx] = True
-    
-    st.session_state.auto_advance = True
-
-def render_timer():
-    """Affiche le minuteur avec style"""
-    remaining = get_remaining_time()
-    
-    # Déterminer la classe CSS en fonction du temps restant
-    warning_class = "timer-warning" if remaining < 60 else ""
-    color = "#f44336" if remaining < 60 else ("#ff9800" if remaining < 120 else "#4caf50")
-    
-    timer_html = f"""
-    <div class="timer-card">
-        <div class="timer-label">⏱️ Temps restant</div>
-        <div class="timer-text" style="color: {color};">
-            {format_time(remaining)}
-        </div>
-    </div>
-    """
-    
-    # Afficher dans une colonne à droite
-    st.markdown(timer_html, unsafe_allow_html=True)
-    
-    # Vérifier si le temps est écoulé
-    if remaining <= 0 and not st.session_state.auto_advance:
-        if st.session_state.page - 1 not in st.session_state.validated:
-            auto_validate_and_next()
-            st.rerun()
-
-# ══════════════════════════════════════════════════════════════════════════════
-# FONCTIONS UTILITAIRES & PDF
+# FONCTIONS UTILITAIRES
 # ══════════════════════════════════════════════════════════════════════════════
 def get_progress():
     return len(st.session_state.validated)
@@ -365,11 +216,6 @@ def get_current_score():
     return sum(st.session_state.scores.values())
 
 def remove_accents(input_str):
-    input_str = input_str.replace('←', '<-')
-    input_str = input_str.replace('→', '->')
-    input_str = input_str.replace('⟶', '->')
-    input_str = input_str.replace('×', 'x')
-    input_str = input_str.replace('²', '2')
     nfkd_form = unicodedata.normalize('NFKD', input_str)
     ascii_text = u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
     try:
@@ -381,10 +227,10 @@ def show_progress_bar():
     progress = get_progress() / TOTAL_EXERCISES
     score = get_current_score()
     st.markdown(f"""
-    <div class="progress-container">
-        <div class="progress-header">
+    <div style="margin-bottom: 1.2rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-size:0.85rem;color:#666;">Progression</span>
-            <span style="font-size:0.85rem;font-weight:600;color:#1976d2;">
+            <span style="font-size:0.85rem;font-weight:600;color:#2e7d32;">
                 {get_progress()}/{TOTAL_EXERCISES} exercices &nbsp;|&nbsp; Score : {score}/{TOTAL_POINTS}
             </span>
         </div>
@@ -401,7 +247,7 @@ def generate_pdf_report():
     class PDF(FPDF):
         def header(self):
             self.set_font('Helvetica', 'B', 12)
-            self.cell(0, 10, 'Controle de Python - Correction', border=False, ln=True, align='C')
+            self.cell(0, 10, 'Controle de Python - Algorithmes et Fonctions', border=False, ln=True, align='C')
             self.set_font('Helvetica', '', 8)
             self.set_text_color(100, 100, 100)
             self.cell(0, 5, f'Date : {datetime.now().strftime("%d/%m/%Y")}', border=False, ln=True, align='C')
@@ -412,7 +258,7 @@ def generate_pdf_report():
     pdf.set_auto_page_break(auto=True, margin=15)
 
     pdf.set_font('Helvetica', 'B', 11)
-    pdf.set_text_color(13, 71, 161)
+    pdf.set_text_color(27, 94, 32)
     pdf.cell(0, 8, f'Nom et Prenom : {remove_accents(st.session_state.nom)}', ln=True)
     pdf.cell(0, 8, f'Classe : {remove_accents(st.session_state.classe)}', ln=True)
 
@@ -424,80 +270,29 @@ def generate_pdf_report():
     pdf.cell(0, 10, f'Note Finale : {note_20} / 20', ln=True)
     pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
-    
-    # Ajout des temps par exercice
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(0, 8, 'Temps par exercice :', ln=True)
-    pdf.set_font('Helvetica', '', 9)
-    for i, ex in enumerate(EXERCISES):
-        time_spent = st.session_state.time_spent.get(i, 0)
-        time_str = format_time(time_spent)
-        pdf.cell(0, 5, f'Exercice {i+1}: {time_str}', ln=True)
-    pdf.ln(5)
 
     for i, ex in enumerate(EXERCISES):
         if pdf.get_y() > 250:
             pdf.add_page()
 
         score = st.session_state.scores.get(i, 0)
-        ex_type = "QCM" if ex['type'] == 'qcm' else "Mise en ordre"
+        
+        if ex['type'] == 'qcm':
+            ex_type = "QCM"
+        elif ex['type'] == 'code_order':
+            ex_type = "Mise en ordre"
+        else:
+            ex_type = "Association"
 
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_fill_color(227, 242, 253)
+        pdf.set_fill_color(232, 245, 233)
         pdf.cell(0, 7, f'Exercice {i + 1} ({ex_type}) : {remove_accents(ex["title"])}', ln=True, fill=True)
 
         pdf.set_font('Helvetica', '', 9)
         pdf.cell(0, 5, f'Points obtenus : {score} / {ex["points"]}', ln=True)
-        pdf.cell(0, 5, f'Temps passé : {format_time(st.session_state.time_spent.get(i, 0))}', ln=True)
         pdf.ln(2)
 
-        if ex['type'] == 'qcm':
-            user_ans = st.session_state.answers.get(i, -1)
-            for j, opt in enumerate(ex['options']):
-                letter = chr(65 + j)
-                is_correct = j == ex['correct']
-                is_user = j == user_ans
-
-                if is_correct:
-                    pdf.set_text_color(0, 128, 0)
-                    pdf.set_font('Helvetica', 'B', 9)
-                    symbole = "[VRAI] "
-                elif is_user:
-                    pdf.set_text_color(200, 0, 0)
-                    pdf.set_font('Helvetica', 'B', 9)
-                    symbole = "[FAUX] "
-                else:
-                    pdf.set_text_color(80, 80, 80)
-                    pdf.set_font('Helvetica', '', 9)
-                    symbole = ""
-
-                pdf.multi_cell(0, 5, f'{symbole}{letter}) {remove_accents(opt)}')
-        else:
-            correct_order = list(range(len(ex['instructions'])))
-            user_order = st.session_state.answers.get(i, [])
-
-            pdf.set_text_color(0, 128, 0)
-            pdf.set_font('Helvetica', 'B', 9)
-            pdf.cell(0, 5, 'Correction attendue :', ln=True)
-            pdf.set_font('Courier', '', 8)
-            pdf.set_text_color(0, 0, 0)
-            for pos, idx in enumerate(correct_order):
-                pdf.cell(0, 4, f'  {pos + 1}. {remove_accents(ex["instructions"][idx])}', ln=True)
-
-            pdf.ln(2)
-            pdf.set_text_color(200, 0, 0)
-            pdf.set_font('Helvetica', 'B', 9)
-            pdf.cell(0, 5, 'Votre reponse :', ln=True)
-            pdf.set_font('Courier', '', 8)
-            pdf.set_text_color(0, 0, 0)
-            for pos in range(len(user_order)):
-                idx = user_order[pos]
-                pdf.cell(0, 4, f'  {pos + 1}. {remove_accents(ex["instructions"][idx])}', ln=True)
-
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(5)
-
-    classe_folder = os.path.join("resultats_python", st.session_state.classe)
+    classe_folder = os.path.join("resultats_python_variante", st.session_state.classe)
     os.makedirs(classe_folder, exist_ok=True)
 
     safe_nom = remove_accents(st.session_state.nom).replace(" ", "_")
@@ -520,8 +315,10 @@ def render_qcm(ex_idx):
     st.markdown(f"""<div class="exercise-card">
         <span class="section-label label-qcm">QCM — {ex['points']} pts</span>
         <h3 style="margin-top:0.5rem;">Question {num} : {ex['title']}</h3>
-        <p style="font-size:1.05rem;font-weight:500;margin-bottom:1rem;">{ex['question']}</p>
     </div>""", unsafe_allow_html=True)
+    
+    st.markdown(ex['question'])
+    st.markdown("<br>", unsafe_allow_html=True)
 
     is_validated = ex_idx in st.session_state.validated
     if is_validated:
@@ -534,12 +331,11 @@ def render_qcm(ex_idx):
             elif i == user_answer and not is_correct:
                 st.markdown(f'<div class="wrong-item">❌ {letter}) {opt}</div>', unsafe_allow_html=True)
             else:
-                st.markdown(
-                    f'<div style="padding:10px 14px;color:#757575;border-radius:10px;margin:5px 0;font-size:0.95rem;">{letter}) {opt}</div>',
-                    unsafe_allow_html=True)
+                st.markdown(f'<div style="padding:10px 14px;color:#757575;">{letter}) {opt}</div>', unsafe_allow_html=True)
+        
         st.markdown("---")
-        st.markdown(f"""<div style="background-color: #e0f7fa; padding: 12px 15px; border-radius: 8px; 
-                     border-left: 4px solid #00bcd4; color: #006064;">
+        st.markdown(f"""<div style="background-color: #e8f5e9; padding: 12px 15px; border-radius: 8px; 
+                     border-left: 4px solid #4caf50; color: #1b5e20;">
                      💡 <b>Explication :</b> {ex['explanation']}
                      </div>""", unsafe_allow_html=True)
 
@@ -552,7 +348,7 @@ def render_qcm(ex_idx):
             "Sélectionnez votre réponse :",
             range(len(ex['options'])),
             format_func=lambda i: f"{chr(65 + i)}) {ex['options'][i]}",
-            key=f'qcm_radio_{ex_idx}',
+            key=f'qcm_{ex_idx}',
             label_visibility="collapsed"
         )
 
@@ -560,23 +356,19 @@ def render_qcm(ex_idx):
             st.session_state.answers[ex_idx] = choice
             st.session_state.validated[ex_idx] = True
             st.session_state.scores[ex_idx] = ex['points'] if choice == ex['correct'] else 0
-            # Enregistrer le temps passé
-            if ex_idx in st.session_state.time_spent:
-                st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
 
-        st.markdown("<div style='height:15px'></div>", unsafe_allow_html=True)
-        st.button("✅  Valider ma réponse", type='primary', key=f'val_qcm_{ex_idx}', use_container_width=True,
-                  on_click=validate_qcm)
+        st.button("✅ Valider ma réponse", type='primary', key=f'val_qcm_{ex_idx}', 
+                 use_container_width=True, on_click=validate_qcm)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# RENDU EXERCICE DE MISE EN ORDRE
+# RENDU EXERCICE DE MISE EN ORDRE DE CODE
 # ══════════════════════════════════════════════════════════════════════════════
-def render_ordering(ex_idx):
+def render_code_order(ex_idx):
     ex = EXERCISES[ex_idx]
     num = ex_idx + 1
-    key = f'ord_{ex_idx}'
+    key = f'code_{ex_idx}'
     st.markdown(f"""<div class="exercise-card">
-        <span class="section-label label-ordre">Mise en ordre — {ex['points']} pts</span>
+        <span class="section-label label-code">Mise en ordre — {ex['points']} pts</span>
         <h3 style="margin-top:0.5rem;">Exercice {num} : {ex['title']}</h3>
         <p style="margin-top:0.5rem;">{ex['description']}</p>
     </div>""", unsafe_allow_html=True)
@@ -606,8 +398,8 @@ def render_ordering(ex_idx):
                 valid_options_at_pos[pos] = group_set
 
         correct_count = 0
-        for pos in range(total_instr):
-            user_idx = user_order[pos] if pos < len(user_order) else -1
+        for pos in range(min(len(user_order), total_instr)):
+            user_idx = user_order[pos]
             if user_idx in valid_options_at_pos.get(pos, set()):
                 correct_count += 1
 
@@ -622,138 +414,212 @@ def render_ordering(ex_idx):
             instr_text = ex['instructions'][user_idx] if 0 <= user_idx < total_instr else "(vide)"
 
             if is_pos_correct:
-                st.markdown(f'<div class="correct-item"><span class="num-badge">{pos + 1}</span>✅ {instr_text}</div>',
-                            unsafe_allow_html=True)
+                st.markdown(f'<div class="correct-item"><span style="background:#2e7d32;color:white;border-radius:50%;display:inline-block;width:24px;text-align:center;margin-right:8px;">{pos + 1}</span>✅ {instr_text}</div>',
+                           unsafe_allow_html=True)
             else:
                 correct_idx = correct_order[pos]
                 correct_text = ex['instructions'][correct_idx]
                 st.markdown(
-                    f'<div class="wrong-item"><span class="num-badge" style="background:#c62828;">{pos + 1}</span>❌ Vous : <i>{instr_text}</i><br>&nbsp;&nbsp;&nbsp;&nbsp;⟶ Correction : <b>{correct_text}</b></div>',
+                    f'<div class="wrong-item"><span style="background:#c62828;color:white;border-radius:50%;display:inline-block;width:24px;text-align:center;margin-right:8px;">{pos + 1}</span>❌ Vous : <i>{instr_text}</i><br>&nbsp;&nbsp;&nbsp;&nbsp;⟶ <b>{correct_text}</b></div>',
                     unsafe_allow_html=True)
 
         st.markdown("---")
         if partial_score == ex['points']:
-            st.success(f"🎉 **Parfait ! {correct_count}/{total_instr} — {partial_score}/{ex['points']} pts**")
+            st.success(f"🎉 **Parfait ! {partial_score}/{ex['points']} pts**")
         elif partial_score > 0:
-            st.warning(f"⚠️ **Partiel : {correct_count}/{total_instr} — {partial_score}/{ex['points']} pts**")
+            st.warning(f"⚠️ **Partiel : {partial_score}/{ex['points']} pts**")
         else:
             st.error(f"❌ **Aucune position correcte — 0/{ex['points']} pts**")
         return
 
-    def make_add_callback(idx_to_add):
-        def callback():
-            avail = st.session_state[key + '_available']
-            if idx_to_add in avail:
-                avail.remove(idx_to_add)
-                st.session_state[key + '_chosen'].append(idx_to_add)
-        return callback
-
-    def make_rem_callback(pos_to_rem):
-        def callback():
-            chosen_list = st.session_state[key + '_chosen']
-            if pos_to_rem < len(chosen_list):
-                removed = chosen_list.pop(pos_to_rem)
-                st.session_state[key + '_available'].append(removed)
-        return callback
-
-    def reset_all():
-        indices = list(range(total_instr))
-        random.shuffle(indices)
-        st.session_state[key + '_available'] = indices
-        st.session_state[key + '_chosen'] = []
-
-    def validate_order():
-        st.session_state.answers[ex_idx] = list(st.session_state[key + '_chosen'])
-        st.session_state.validated[ex_idx] = True
-        # Enregistrer le temps passé
-        if ex_idx in st.session_state.time_spent:
-            st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
-
     col_avail, col_chosen = st.columns(2)
     with col_avail:
-        st.markdown("#### 📌 Instructions disponibles")
-        st.caption("👆 Cliquez pour ajouter à votre réponse")
+        st.markdown("#### 📌 Blocs disponibles")
         if available:
             for i in available:
-                st.button(f"➕  {ex['instructions'][i]}", key=f'{key}_add_{i}', use_container_width=True,
-                          on_click=make_add_callback(i))
+                st.code(ex['instructions'][i], language='python')
+                if st.button(f"➕ Ajouter", key=f'{key}_add_{i}'):
+                    st.session_state[key + '_available'].remove(i)
+                    st.session_state[key + '_chosen'].append(i)
+                    st.rerun()
         else:
-            st.success("✅ Toutes les instructions sont placées !")
+            st.success("✅ Tous les blocs sont placés !")
 
     with col_chosen:
-        st.markdown("#### ✅ Votre réponse (dans l’ordre)")
-        st.caption("👆 Cliquez ✖ pour retirer une instruction")
+        st.markdown("#### ✅ Votre ordre")
         if chosen:
             for pos_idx, instr_idx in enumerate(chosen):
-                c1, c2, c3 = st.columns([0.6, 7, 0.6])
-                with c1:
-                    st.markdown(f'<div class="num-badge">{pos_idx + 1}</div>', unsafe_allow_html=True)
-                with c2:
-                    st.markdown(f'<div class="chosen-item">{ex["instructions"][instr_idx]}</div>',
-                                unsafe_allow_html=True)
-                with c3:
-                    st.button("✖", key=f'{key}_rem_{pos_idx}', on_click=make_rem_callback(pos_idx))
+                col1, col2 = st.columns([1, 10])
+                with col1:
+                    st.markdown(f"**{pos_idx + 1}**")
+                with col2:
+                    st.code(ex['instructions'][instr_idx], language='python')
+                if st.button(f"✖ Retirer", key=f'{key}_rem_{pos_idx}'):
+                    removed = st.session_state[key + '_chosen'].pop(pos_idx)
+                    st.session_state[key + '_available'].append(removed)
+                    st.rerun()
         else:
-            st.markdown(
-                '<div class="empty-slot">Cliquez sur les instructions de gauche pour les placer dans l’ordre</div>',
-                unsafe_allow_html=True)
+            st.info("Cliquez sur les blocs de gauche pour les ordonner")
 
     st.markdown("---")
     all_placed = len(chosen) == total_instr
     c_reset, c_val = st.columns([1, 1])
     with c_reset:
-        st.button("🔄  Recommencer", key=f'{key}_reset', use_container_width=True, on_click=reset_all)
+        if st.button("🔄 Recommencer", key=f'{key}_reset', use_container_width=True):
+            indices = list(range(total_instr))
+            random.shuffle(indices)
+            st.session_state[key + '_available'] = indices
+            st.session_state[key + '_chosen'] = []
+            st.rerun()
     with c_val:
-        st.button("✅  Valider mon ordre", type='primary', key=f'{key}_validate', use_container_width=True,
-                  disabled=not all_placed, on_click=validate_order)
+        if st.button("✅ Valider mon ordre", type='primary', key=f'{key}_validate', 
+                    use_container_width=True, disabled=not all_placed):
+            st.session_state.answers[ex_idx] = list(st.session_state[key + '_chosen'])
+            st.session_state.validated[ex_idx] = True
+            st.rerun()
 
     if not all_placed:
         remaining = total_instr - len(chosen)
-        st.info(f"⏳ Il reste {remaining} instruction(s) à placer avant de pouvoir valider.")
+        st.info(f"⏳ Il reste {remaining} bloc(s) à placer.")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RENDU EXERCICE D'ASSOCIATION
+# ══════════════════════════════════════════════════════════════════════════════
+def render_association(ex_idx):
+    ex = EXERCISES[ex_idx]
+    num = ex_idx + 1
+    key = f'assoc_{ex_idx}'
+    
+    st.markdown(f"""<div class="exercise-card">
+        <span class="section-label label-assoc">Association — {ex['points']} pts</span>
+        <h3 style="margin-top:0.5rem;">Exercice {num} : {ex['title']}</h3>
+        <p>{ex['description']}</p>
+    </div>""", unsafe_allow_html=True)
+
+    is_validated = ex_idx in st.session_state.validated
+    
+    if key + '_answers' not in st.session_state:
+        pairs = ex['pairs']
+        expressions = [p[0] for p in pairs]
+        correct_values = [p[1] for p in pairs]
+        shuffled_values = correct_values.copy()
+        random.shuffle(shuffled_values)
+        st.session_state[key + '_expressions'] = expressions
+        st.session_state[key + '_values'] = shuffled_values
+        st.session_state[key + '_matches'] = {}
+        st.session_state[key + '_available_values'] = shuffled_values.copy()
+
+    expressions = st.session_state[key + '_expressions']
+    available_values = st.session_state[key + '_available_values']
+    matches = st.session_state[key + '_matches']
+
+    if is_validated:
+        total_pairs = len(expressions)
+        correct_matches = 0
+        for i, expr in enumerate(expressions):
+            if matches.get(i) == ex['pairs'][i][1]:
+                correct_matches += 1
+        
+        score = round(correct_matches / total_pairs * ex['points'])
+        st.session_state.scores[ex_idx] = score
+        
+        st.markdown("#### 📋 Résultats")
+        for i, expr in enumerate(expressions):
+            user_match = matches.get(i, "Non associé")
+            correct_match = ex['pairs'][i][1]
+            if user_match == correct_match:
+                st.markdown(f'<div class="correct-item">✅ {expr} → {user_match}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="wrong-item">❌ {expr} → {user_match} (correction: {correct_match})</div>', unsafe_allow_html=True)
+        
+        if score == ex['points']:
+            st.success(f"🎉 **Parfait ! {score}/{ex['points']} pts**")
+        else:
+            st.warning(f"⚠️ **{score}/{ex['points']} pts**")
+        return
+
+    st.markdown("#### Associez chaque expression à sa valeur :")
+    
+    for i, expr in enumerate(expressions):
+        st.markdown(f"**{expr}**")
+        
+        if i in matches:
+            current_value = matches[i]
+            remaining_values = [v for v in available_values if v != current_value] + [current_value]
+        else:
+            current_value = None
+            remaining_values = available_values.copy()
+        
+        options = [""] + remaining_values
+        selected = st.selectbox(
+            f"Valeur pour {expr}",
+            options=options,
+            index=options.index(current_value) if current_value in options else 0,
+            key=f"{key}_select_{i}",
+            label_visibility="collapsed"
+        )
+        
+        if selected and selected != current_value:
+            if i in matches:
+                old_value = matches[i]
+                if old_value not in available_values:
+                    available_values.append(old_value)
+            matches[i] = selected
+            if selected in available_values:
+                available_values.remove(selected)
+            st.rerun()
+        elif not selected and i in matches:
+            old_value = matches[i]
+            del matches[i]
+            if old_value not in available_values:
+                available_values.append(old_value)
+            st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+
+    all_matched = len(matches) == len(expressions)
+    
+    if st.button("✅ Valider mes associations", type='primary', disabled=not all_matched):
+        st.session_state.answers[ex_idx] = matches
+        st.session_state.validated[ex_idx] = True
+        st.rerun()
+    
+    if not all_matched:
+        remaining = len(expressions) - len(matches)
+        st.info(f"⏳ Il reste {remaining} association(s) à faire.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGES
 # ══════════════════════════════════════════════════════════════════════════════
 def render_welcome():
     st.markdown('<p class="main-title">🐍 Contrôle de Python</p>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Niveau débutant — Variables, input/print, conditions et boucles</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Algorithmes, Fonctions et Structures de données</p>', unsafe_allow_html=True)
     st.markdown("---")
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"""<div class="info-box"><h4 style="margin-top:0;">⏱️ Règles</h4>
-        <ul style="line-height:2;"><li><b>Exercices :</b> {TOTAL_EXERCISES}</li><li><b>Score brut :</b> {TOTAL_POINTS} points, converti en note /20</li>
-        <li><b>2 QCM</b> (8 pts) | <b>5 mises en ordre</b> (20 pts)</li>
-        <li><b>⏰ Temps par exercice : 5 minutes</b></li>
-        <li>⚠️ Passage automatique à l'exercice suivant si le temps est écoulé</li></ul></div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box"><h4 style="margin-top:0;">📋 Informations</h4>
+        <ul><li><b>Exercices :</b> 6</li><li><b>Score brut :</b> 30 points, converti en note /20</li>
+        <li><b>3 QCM</b> (15 pts) | <b>2 Mises en ordre</b> (10 pts) | <b>1 Association</b> (5 pts)</li></ul></div>""", unsafe_allow_html=True)
     with c2:
         st.markdown("""<div class="info-box"><h4 style="margin-top:0;">📜 Thèmes</h4>
-        <ul style="line-height:2;"><li>🔹 Types de variables</li><li>🔹 print() et input()</li>
-        <li>🔹 Opérateurs, conditions, boucle for et boucle while</li></ul></div>""", unsafe_allow_html=True)
-
-    st.markdown("""<div style="background:linear-gradient(135deg,#fff8e1,#ffecb3);border-radius:12px;padding:1rem 1.5rem;border:1px solid #ffe082;margin-top:1rem;">
-    <b>⚠️ Règles :</b> Validation individuelle définitive. Points partiels pour les exercices de mise en ordre.
-    <br><b>⏱️ Chronométrage :</b> 5 minutes par exercice. Un minuteur s'affichera en haut à droite.</div>""",
-                unsafe_allow_html=True)
+        <ul><li>🔹 Fonctions et portée des variables</li><li>🔹 Listes et slicing</li>
+        <li>🔹 Boucles for et accumulations</li><li>🔹 Conditions (pair/impair)</li><li>🔹 Fonctions sur les listes (len, max, min, sum)</li></ul></div>""", unsafe_allow_html=True)
 
     if not FPDF_AVAILABLE:
-        st.warning(
-            "⚠️ La bibliothèque `fpdf` n'est pas installée. La génération du PDF à la fin sera désactivée. Tapez `pip install fpdf` dans votre terminal.",
-            icon="⚠️"
-        )
+        st.warning("⚠️ La bibliothèque `fpdf` n'est pas installée. Tapez `pip install fpdf` dans votre terminal.", icon="⚠️")
 
     st.markdown("---")
     with st.form("start_form"):
-        nom = st.text_input("👤 Nom et Prénom :", placeholder="Ex : Mohammed Amrani", label_visibility="collapsed")
+        nom = st.text_input("👤 Nom et Prénom :", placeholder="Ex : Fatima Zahra", label_visibility="collapsed")
         classe = st.selectbox("🏫 Classe :", options=CLASSES)
-        submitted = st.form_submit_button("🚀  Commencer le contrôle", type='primary', use_container_width=True)
+        submitted = st.form_submit_button("🚀 Commencer le contrôle", type='primary', use_container_width=True)
         if submitted:
             if nom.strip():
                 st.session_state.nom = nom.strip()
                 st.session_state.classe = classe
                 st.session_state.started = True
                 st.session_state.page = 1
-                st.session_state.timer_start = time.time()
                 st.rerun()
             else:
                 st.error("⚠️ Veuillez remplir le nom.")
@@ -770,9 +636,9 @@ def render_results():
     elif percentage >= 40:
         color, bg, mention = '#e65100', '#fff3e0', 'Passable 📝'
     else:
-        color, bg, mention = '#c62828', '#ffebee', 'Insuffisant — À retravailler ! 💪'
+        color, bg, mention = '#c62828', '#ffebee', 'À retravailler ! 💪'
 
-    st.markdown(f'<p class="main-title">📊 Résultats du Contrôle</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-title">📊 Résultats du Contrôle</p>', unsafe_allow_html=True)
     st.markdown(
         f'<p class="subtitle">Élève : <strong>{st.session_state.nom}</strong> | Classe : <strong>{st.session_state.classe}</strong></p>',
         unsafe_allow_html=True)
@@ -789,16 +655,18 @@ def render_results():
                 unsafe_allow_html=True)
     for i, ex in enumerate(EXERCISES):
         score = st.session_state.scores.get(i, 0)
-        ex_type = "QCM" if ex['type'] == 'qcm' else "Ordre"
+        if ex['type'] == 'qcm':
+            ex_type = "QCM"
+        elif ex['type'] == 'code_order':
+            ex_type = "Ordre"
+        else:
+            ex_type = "Assoc"
         icon = "✅" if score == ex['points'] else ("⚠️" if score > 0 else "❌")
         pct = (score / ex['points']) * 100 if ex['points'] > 0 else 0
         bar_color = '#2e7d32' if pct == 100 else ('#f57f17' if pct > 0 else '#c62828')
-        time_spent = st.session_state.time_spent.get(i, 0)
-        time_str = format_time(time_spent)
-        st.markdown(f"""<div class="result-row">
+        st.markdown(f"""<div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
             <span style="margin-right:10px;font-size:1.1rem;">{icon}</span>
             <span style="flex:1;font-weight:500;"><span style="color:#999;font-size:0.8rem;margin-right:6px;">[{ex_type}]</span>Ex {i + 1} : {ex['title']}</span>
-            <span style="font-size:0.8rem;color:#666;margin:0 10px;">⏱️ {time_str}</span>
             <div style="width:100px;margin:0 15px;"><div style="height:6px;border-radius:3px;background:#eee;overflow:hidden;"><div style="height:100%;width:{pct}%;background:{bar_color};border-radius:3px;"></div></div></div>
             <span style="font-weight:700;color:{bar_color};min-width:60px;text-align:right;">{score}/{ex['points']}</span></div>""",
                     unsafe_allow_html=True)
@@ -810,7 +678,7 @@ def render_results():
         if st.button("📄 Générer et enregistrer le PDF", type="primary"):
             path, pdf_buffer = generate_pdf_report()
             if path:
-                st.success(f"✅ PDF sauvegardé sur le serveur dans : `{path}`")
+                st.success(f"✅ PDF sauvegardé : `{path}`")
                 st.download_button(
                     label="⬇️ Télécharger ma copie",
                     data=pdf_buffer,
@@ -824,13 +692,13 @@ def render_results():
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2 = st.columns([1, 1])
     with c1:
-        if st.button("🔄  Recommencer le contrôle", use_container_width=True):
+        if st.button("🔄 Recommencer", use_container_width=True):
             for k in list(st.session_state.keys()):
                 del st.session_state[k]
             init_session()
             st.rerun()
     with c2:
-        if st.button("🏠  Retour à l'accueil", use_container_width=True):
+        if st.button("🏠 Retour à l'accueil", use_container_width=True):
             for k in list(st.session_state.keys()):
                 del st.session_state[k]
             init_session()
@@ -845,27 +713,25 @@ elif st.session_state.finished:
     render_results()
 else:
     ex_idx = st.session_state.page - 1
-    
-    # Démarrer le minuteur si nécessaire
-    if st.session_state.timer_start is None:
-        st.session_state.timer_start = time.time()
-    
-    # Header avec nom, classe et minuteur
-    header_cols = st.columns([2, 1, 1.5])
+    ex = EXERCISES[ex_idx]
+
+    header_cols = st.columns([3, 1])
     with header_cols[0]:
         st.markdown(f"👤 **{st.session_state.nom}** ({st.session_state.classe})")
     with header_cols[1]:
-        st.markdown(f"<div style='text-align:right;font-size:0.9rem;color:#1976d2;font-weight:600;'>Exercice {ex_idx + 1} / {TOTAL_EXERCISES}</div>", unsafe_allow_html=True)
-    with header_cols[2]:
-        render_timer()
+        st.markdown(
+            f"<div style='text-align:right;font-size:0.9rem;color:#2e7d32;font-weight:600;'>Exercice {ex_idx + 1} / {TOTAL_EXERCISES}</div>",
+            unsafe_allow_html=True)
 
     show_progress_bar()
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if EXERCISES[ex_idx]['type'] == 'qcm':
+    if ex['type'] == 'qcm':
         render_qcm(ex_idx)
+    elif ex['type'] == 'code_order':
+        render_code_order(ex_idx)
     else:
-        render_ordering(ex_idx)
+        render_association(ex_idx)
 
     st.markdown("---")
     can_proceed = ex_idx in st.session_state.validated
@@ -875,40 +741,21 @@ else:
 
     with nav_c1:
         if show_prev:
-            if st.button("◀  Précédent", use_container_width=True):
+            if st.button("◀ Précédent", use_container_width=True):
                 st.session_state.page -= 1
-                st.session_state.timer_start = time.time()
                 st.rerun()
-        else:
-            st.markdown("&nbsp;")
 
     with nav_c2:
         if is_last:
-            btn_label, btn_action = "📊  Voir mes résultats", 'finish'
-        else:
-            btn_label, btn_action = "Suivant  ▶", 'next'
-
-        if st.button(btn_label, type='primary', use_container_width=True, disabled=not can_proceed):
-            # Enregistrer le temps passé pour l'exercice courant
-            if ex_idx not in st.session_state.time_spent:
-                st.session_state.time_spent[ex_idx] = TIME_PER_EXERCISE - get_remaining_time()
-            
-            if btn_action == 'finish':
+            btn_label = "📊 Voir mes résultats"
+            if st.button(btn_label, type='primary', use_container_width=True, disabled=not can_proceed):
                 st.session_state.finished = True
-            else:
+                st.rerun()
+        else:
+            btn_label = "Suivant ▶"
+            if st.button(btn_label, type='primary', use_container_width=True, disabled=not can_proceed):
                 st.session_state.page += 1
-                st.session_state.timer_start = time.time()
-            st.rerun()
+                st.rerun()
 
     if not can_proceed:
         st.info("⚠️ **Veuillez valider votre réponse avant de passer à la suite.**")
-    
-    # Vérifier l'auto-avancement
-    if st.session_state.get('auto_advance', False):
-        st.session_state.auto_advance = False
-        if is_last:
-            st.session_state.finished = True
-        else:
-            st.session_state.page += 1
-            st.session_state.timer_start = time.time()
-        st.rerun()
